@@ -1,0 +1,35 @@
+﻿cl : командная строка  warning D9035: использование параметра "Gm" нежелательно, он будет удален в следующих выпусках
+  pngwutil.c
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\libpng\pngwutil.c(185,7): warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\libpng\pngwutil.c(1240,10): warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  pngwtran.c
+  pngwrite.c
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\libpng\pngwrite.c(417,11): warning C4996: 'gmtime': This function or variable may be unsafe. Consider using gmtime_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\libpng\pngwrite.c(510,11): warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\libpng\pngwrite.c(515,9): warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\libpng\pngwrite.c(582,9): warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\libpng\pngwrite.c(587,7): warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  pngwio.c
+  pngtrans.c
+  pngset.c
+  pngrutil.c
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\libpng\pngrutil.c(289,13): warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\libpng\pngrutil.c(293,13): warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\libpng\pngrutil.c(297,13): warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\libpng\pngrutil.c(331,7): warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  pngrtran.c
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\libpng\pngrtran.c(1282,7): warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  pngrio.c
+  pngread.c
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\libpng\pngread.c(120,11): warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\libpng\pngread.c(125,9): warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\libpng\pngread.c(202,9): warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\libpng\pngread.c(207,7): warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  pngpread.c
+  pngmem.c
+  pngget.c
+  pngerror.c
+  png.c
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\libpng\png.c(680,4): warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  Создание кода...
+  libpng.vcxproj -> C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\Debug\libpng.lib
