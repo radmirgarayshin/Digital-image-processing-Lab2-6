@@ -1,0 +1,22 @@
+﻿cl : командная строка  warning D9035: использование параметра "Gm" нежелательно, он будет удален в следующих выпусках
+  zutil.c
+  uncompr.c
+  trees.c
+  inftrees.c
+  inflate.c
+  inffast.c
+  infback.c
+  gzio.c
+  deflate.c
+  crc32.c
+  compress.c
+  adler32.c
+  Создание кода...
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\zlib\gzio.c(131,5): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\zlib\gzio.c(181,24): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\zlib\gzio.c(226,5): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\zlib\gzio.c(1001,38): warning C4996: 'strerror': This function or variable may be unsafe. Consider using strerror_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\zlib\gzio.c(1008,5): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\zlib\gzio.c(1009,5): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\zlib\gzio.c(1010,5): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  zlib.vcxproj -> C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\Debug\zlib.lib
