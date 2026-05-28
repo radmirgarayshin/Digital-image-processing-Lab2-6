@@ -5,7 +5,7 @@
 #include <algorithm>
 
 // ================================================================
-//  �������� ����������
+//  Ранговый фильтр (rank=0: минимум, rank=N/2: медиана, rank=N-1: максимум)
 // ================================================================
 
 void rankFilter(const unsigned char* in, unsigned char* out,
@@ -30,7 +30,8 @@ void rankFilter(const unsigned char* in, unsigned char* out,
     }
 }
 
-void medianFilter(const unsigned char* in, unsigned char* out,
+// Медианный фильтр сортировкой (через rankFilter)
+void medianFilterSort(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH, int apertureW, int apertureH)
 {
     rankFilter(in, out, imgW, imgH, apertureW, apertureH,
@@ -38,7 +39,74 @@ void medianFilter(const unsigned char* in, unsigned char* out,
 }
 
 // ================================================================
-//  ������ ���������� ��������
+//  Медианный фильтр — алгоритм Хуанга (скользящая гистограмма)
+//  Сложность: O(imgW*imgH*(kH + 256))  — не растёт с размером апертуры
+//
+//  Принцип: для каждой строки сначала строим гистограмму окна (kW x kH)
+//  для x=0 (O(kW*kH)), затем скользим вправо: удаляем левый столбец
+//  и добавляем правый (O(kH) на шаг). Медиана ищется за O(256).
+//  Граничные пиксели обрабатываются с зеркальным clamp.
+// ================================================================
+
+void medianFilterHuang(const unsigned char* in, unsigned char* out,
+    size_t imgW, size_t imgH, int kW, int kH)
+{
+    int halfW  = kW / 2;
+    int halfH  = kH / 2;
+    int medRank = (kW * kH) / 2;  // индекс медианы (0-based, нижняя)
+
+    std::vector<int> hist(256, 0);
+
+    for (int y = 0; y < (int)imgH; ++y) {
+        // Строим начальную гистограмму для x=0
+        std::fill(hist.begin(), hist.end(), 0);
+        for (int ky = -halfH; ky <= halfH; ++ky) {
+            int iy = std::max(0, std::min((int)imgH - 1, y + ky));
+            for (int kx = -halfW; kx <= halfW; ++kx) {
+                int ix = std::max(0, std::min((int)imgW - 1, kx));
+                hist[in[iy * imgW + ix]]++;
+            }
+        }
+
+        for (int x = 0; x < (int)imgW; ++x) {
+            // Найти медиану за O(256)
+            int count = 0;
+            for (int v = 0; v <= 255; ++v) {
+                count += hist[v];
+                if (count > medRank) {
+                    out[y * imgW + x] = (unsigned char)v;
+                    break;
+                }
+            }
+
+            // Сдвиг вправо: удалить столбец x-halfW, добавить столбец x+halfW+1
+            if (x + 1 < (int)imgW) {
+                int removeX = x - halfW;
+                int addX    = x + halfW + 1;
+                for (int ky = -halfH; ky <= halfH; ++ky) {
+                    int iy = std::max(0, std::min((int)imgH - 1, y + ky));
+                    int rxc = std::max(0, std::min((int)imgW - 1, removeX));
+                    hist[in[iy * imgW + rxc]]--;
+                    int axc = std::max(0, std::min((int)imgW - 1, addX));
+                    hist[in[iy * imgW + axc]]++;
+                }
+            }
+        }
+    }
+}
+
+// Автовыбор: для малых ядер (≤5×5) — сортировка, для больших — Хуанг
+void medianFilter(const unsigned char* in, unsigned char* out,
+    size_t imgW, size_t imgH, int apertureW, int apertureH)
+{
+    if (apertureW * apertureH <= 25)   // ≤ 5×5
+        medianFilterSort(in, out, imgW, imgH, apertureW, apertureH);
+    else
+        medianFilterHuang(in, out, imgW, imgH, apertureW, apertureH);
+}
+
+// ================================================================
+//  Фильтр усечённого среднего (trimCount крайних значений отбрасывается)
 // ================================================================
 
 void trimmedMeanFilter(const unsigned char* in, unsigned char* out,
@@ -72,7 +140,7 @@ void trimmedMeanFilter(const unsigned char* in, unsigned char* out,
 }
 
 // ================================================================
-//  ����������� ������
+//  Усредняющий фильтр (для сравнения PSNR)
 // ================================================================
 
 void meanFilter(const unsigned char* in, unsigned char* out,
@@ -113,7 +181,7 @@ double computePSNR(const unsigned char* orig, const unsigned char* filtered,
 }
 
 // ================================================================
-//  ���
+//  Добавление шума (Бокс-Мюллер для гауссова, равномерный для импульсного)
 // ================================================================
 
 void addGaussianNoise(const unsigned char* in, unsigned char* out,
@@ -142,7 +210,7 @@ void addImpulseNoise(const unsigned char* in, unsigned char* out,
 }
 
 // ================================================================
-//  ��������������� ��������
+//  Морфологические операции (structuring element — квадрат size×size)
 // ================================================================
 
 void morphErode(const unsigned char* in, unsigned char* out,

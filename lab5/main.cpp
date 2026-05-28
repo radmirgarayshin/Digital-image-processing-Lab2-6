@@ -1,4 +1,8 @@
 ﻿#include <stdio.h>
+#include <time.h>
+#include <vector>
+#include <algorithm>
+#include <cmath>
 #include "PngProc.h"
 #include "lab5.h"
 
@@ -60,6 +64,97 @@ int main(int argc, char* argv[])
     printf("Mean filter    PSNR: %.2f dB\n", computePSNR(pIn, pMean, total));
     printf("Median filter  PSNR: %.2f dB\n", computePSNR(pIn, pMedian, total));
     printf("Trimmed mean   PSNR: %.2f dB\n", computePSNR(pIn, pTrimmed, total));
+
+    // === Timing benchmark: sort vs Huang ===
+    // Используем кроп 512x512 чтобы бенчмарк завершился быстро
+    const size_t benchW = (nWidth  > 512) ? 512 : nWidth;
+    const size_t benchH = (nHeight > 512) ? 512 : nHeight;
+    std::vector<unsigned char> benchIn(benchW * benchH);
+    std::vector<unsigned char> benchOut(benchW * benchH);
+    for (size_t y = 0; y < benchH; ++y)
+        for (size_t x = 0; x < benchW; ++x)
+            benchIn[y * benchW + x] = pIn[y * nWidth + x];
+
+    printf("\n=== Median filter: sort vs Huang algorithm (crop %zux%zu) ===\n", benchW, benchH);
+    printf("  Size |  Sort (ms) |  Huang (ms) |  Speedup\n");
+    printf("  -----|------------|-------------|----------\n");
+
+    const int numSizes = 10;
+    const int aperSizes[] = { 3, 5, 7, 9, 11, 13, 15, 17, 19, 21 };
+    double timeSort[numSizes], timeHuang[numSizes];
+
+    for (int si = 0; si < numSizes; ++si) {
+        int ks = aperSizes[si];
+        clock_t t0, t1;
+
+        t0 = clock();
+        medianFilterSort(benchIn.data(), benchOut.data(), benchW, benchH, ks, ks);
+        t1 = clock();
+        timeSort[si] = 1000.0 * (double)(t1 - t0) / CLOCKS_PER_SEC;
+
+        t0 = clock();
+        medianFilterHuang(benchIn.data(), benchOut.data(), benchW, benchH, ks, ks);
+        t1 = clock();
+        timeHuang[si] = 1000.0 * (double)(t1 - t0) / CLOCKS_PER_SEC;
+
+        double speedup = (timeHuang[si] > 0.001) ? timeSort[si] / timeHuang[si] : 0.0;
+        printf("  %2dx%-2d |   %8.1f |    %8.1f |  %.2fx\n",
+            ks, ks, timeSort[si], timeHuang[si], speedup);
+    }
+
+    // === Timing chart PNG ===
+    // Two bars per aperture size: Sort (gray=160) and Huang (white=255)
+    int chartW  = 560;  // 10 groups * (26+30) px + margins
+    int chartH  = 280;
+    int marginL = 50, marginB = 40, marginT = 20, marginR = 20;
+    int plotW   = chartW - marginL - marginR;
+    int plotH   = chartH - marginT - marginB;
+    int groupW  = plotW / numSizes;   // pixels per group
+    int barW    = groupW / 2 - 2;    // bar width
+
+    double maxTime = 0;
+    for (int i = 0; i < numSizes; ++i)
+        maxTime = std::max(maxTime, std::max(timeSort[i], timeHuang[i]));
+    if (maxTime < 1.0) maxTime = 1.0;
+
+    std::vector<unsigned char> chart(chartW * chartH, 30);  // dark background
+
+    // Grid lines
+    for (int gi = 1; gi <= 5; ++gi) {
+        int gy = marginT + plotH - (int)(plotH * gi / 5.0);
+        for (int x = marginL; x < marginL + plotW; ++x)
+            chart[gy * chartW + x] = 70;
+    }
+
+    // Bars
+    for (int si = 0; si < numSizes; ++si) {
+        int gx = marginL + si * groupW;
+
+        // Sort bar (gray = 160)
+        int hSort = (int)(plotH * timeSort[si] / maxTime + 0.5);
+        for (int y = marginT + plotH - hSort; y < marginT + plotH; ++y)
+            for (int x = gx + 1; x < gx + 1 + barW; ++x)
+                if (x >= 0 && x < chartW && y >= 0 && y < chartH)
+                    chart[y * chartW + x] = 160;
+
+        // Huang bar (white = 240)
+        int hHuang = (int)(plotH * timeHuang[si] / maxTime + 0.5);
+        for (int y = marginT + plotH - hHuang; y < marginT + plotH; ++y)
+            for (int x = gx + barW + 3; x < gx + 2 * barW + 3; ++x)
+                if (x >= 0 && x < chartW && y >= 0 && y < chartH)
+                    chart[y * chartW + x] = 240;
+    }
+
+    // Baseline
+    for (int x = marginL; x < marginL + plotW; ++x)
+        chart[(marginT + plotH) * chartW + x] = 200;
+    // Left axis
+    for (int y = marginT; y <= marginT + plotH; ++y)
+        chart[y * chartW + marginL] = 200;
+
+    NPngProc::writePngFile("timing_chart.png", chart.data(), chartW, chartH, 8);
+    printf("\nTiming chart saved: timing_chart.png\n");
+    printf("Legend: gray bar = sort-based,  white bar = Huang algorithm\n\n");
 
     // --- Морфологические операции ---
     printf("\n=== Morphological operations ===\n");

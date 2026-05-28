@@ -2,21 +2,31 @@
 #include <cstddef>
 #include <vector>
 
-// Ранговая фильтрация (rank — порядковый номер от 0 до size*size-1)
-// rank=0 — минимум, rank=size*size/2 — медиана, rank=size*size-1 — максимум
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (rank пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ 0 пїЅпїЅ size*size-1)
+// rank=0 пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, rank=size*size/2 пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, rank=size*size-1 пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 void rankFilter(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH, int apertureW, int apertureH, int rank);
 
-// Медианный фильтр
+// РњРµРґРёР°РЅРЅС‹Р№ С„РёР»СЊС‚СЂ вЂ” СЃРѕСЂС‚РёСЂРѕРІРєРѕР№ (РѕРїС‚РёРјР°Р»РµРЅ РґР»СЏ РјР°Р»С‹С… Р°РїРµСЂС‚СѓСЂ, в‰¤5Г—5)
+void medianFilterSort(const unsigned char* in, unsigned char* out,
+    size_t imgW, size_t imgH, int apertureW, int apertureH);
+
+// РњРµРґРёР°РЅРЅС‹Р№ С„РёР»СЊС‚СЂ вЂ” Р°Р»РіРѕСЂРёС‚Рј РҐСѓР°РЅРіР°: СЃРєРѕР»СЊР·СЏС‰Р°СЏ РіРёСЃС‚РѕРіСЂР°РјРјР°
+// O(256) РЅР° РїРёРєСЃРµР»СЊ (РЅРµ Р·Р°РІРёСЃРёС‚ РѕС‚ СЂР°Р·РјРµСЂР° Р°РїРµСЂС‚СѓСЂС‹), РѕРїС‚РёРјР°Р»РµРЅ РґР»СЏ Р±РѕР»СЊС€РёС…
+void medianFilterHuang(const unsigned char* in, unsigned char* out,
+    size_t imgW, size_t imgH, int apertureW, int apertureH);
+
+// РњРµРґРёР°РЅРЅС‹Р№ С„РёР»СЊС‚СЂ вЂ” Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РІС‹Р±РёСЂР°РµС‚ СЂРµР°Р»РёР·Р°С†РёСЋ:
+//   в‰¤5Г—5: СЃРѕСЂС‚РёСЂРѕРІРєР°,  >5Г—5: Р°Р»РіРѕСЂРёС‚Рј РҐСѓР°РЅРіР°
 void medianFilter(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH, int apertureW, int apertureH);
 
-// Фильтр усечённого среднего (отбрасывает trimCount наименьших и наибольших)
+// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ trimCount пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 void trimmedMeanFilter(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH, int apertureW, int apertureH,
     int trimCount);
 
-// Усредняющий фильтр (для сравнения PSNR)
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ PSNR)
 void meanFilter(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH, int size);
 
@@ -24,15 +34,15 @@ void meanFilter(const unsigned char* in, unsigned char* out,
 double computePSNR(const unsigned char* orig, const unsigned char* filtered,
     size_t total);
 
-// Добавление гауссова шума
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 void addGaussianNoise(const unsigned char* in, unsigned char* out,
     size_t total, double sigma);
 
-// Добавление импульсного шума
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 void addImpulseNoise(const unsigned char* in, unsigned char* out,
     size_t total, double density);
 
-// Морфологические операции (structuring element — квадрат size x size)
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (structuring element пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ size x size)
 void morphErode(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH, int size);
 
