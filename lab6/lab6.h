@@ -4,29 +4,46 @@
 
 struct RegionInfo {
     int label;
-    int area;             // M00 — площадь
-    double cx, cy;        // центр масс (M10/M00, M01/M00)
-    double mu20, mu02, mu11; // центральные моменты 2-го порядка
-    double circularity;   // 0..1, 1 = идеальный круг
+    int area;                   // M00 (РїР»РѕС‰Р°РґСЊ)
+    double cx, cy;              // С†РµРЅС‚СЂ РјР°СЃСЃ (M10/M00, M01/M00)
+    double mu20, mu02, mu11;    // С†РµРЅС‚СЂР°Р»СЊРЅС‹Рµ РјРѕРјРµРЅС‚С‹ 2-РіРѕ РїРѕСЂСЏРґРєР°
+
+    // Eigenvalue circularity: lam_min / lam_max
+    // РќРµРґРѕСЃС‚Р°С‚РѕРє: РґР»СЏ РєРІР°РґСЂР°С‚Р° Рё СЂРѕРјР±Р° С‚РѕР¶Рµ = 1 (СЃРёРјРјРµС‚СЂРёС‡РЅС‹Рµ С„РѕСЂРјС‹)
+    double circEig;
+
+    // Isoperimetric circularity: 4*pi*Area / Perimeter^2
+    // РљСЂСѓРі: ~1.0   РљРІР°РґСЂР°С‚: ~pi/4~0.785   Р РѕРјР±: ~pi/4~0.785
+    int    perimeter;
+    double circIso;
 };
 
-// Алгоритм Оцу — возвращает оптимальный порог
+// РџРѕСЂРѕРі РћС†Сѓ
 int otsuThreshold(const uint8_t* img, int width, int height);
 
-// Бинаризация: >= threshold -> 255, иначе 0
+// Р‘РёРЅР°СЂРёР·Р°С†РёСЏ: >= threshold -> 255, РёРЅР°С‡Рµ 0
 void binarize(const uint8_t* img, uint8_t* out, int width, int height, int threshold);
 
-// Разметка 4-связных областей, возвращает число областей
+// Р Р°Р·РјРµС‚РєР° 4-СЃРІСЏР·РЅС‹С… РєРѕРјРїРѕРЅРµРЅС‚; РІРѕР·РІСЂР°С‰Р°РµС‚ С‡РёСЃР»Рѕ РјРµС‚РѕРє
 int labelConnectedComponents(const uint8_t* binary, int* labels, int width, int height);
 
-// Вычисление геометрических моментов для каждой области
+// Р’С‹С‡РёСЃР»РµРЅРёРµ РіРµРѕРјРµС‚СЂРёС‡РµСЃРєРёС… РїСЂРёР·РЅР°РєРѕРІ РґР»СЏ РєР°Р¶РґРѕР№ РѕР±Р»Р°СЃС‚Рё
 std::vector<RegionInfo> computeRegionProperties(
     const int* labels, int width, int height, int numLabels);
 
-// Подсчёт областей с area > minArea и circularity >= circThreshold
+// РџРѕРґСЃС‡С‘С‚ РѕРєСЂСѓРіР»С‹С… РѕР±Р»Р°СЃС‚РµР№ (РїРѕ isoperimetric circularity)
+// РСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РґРёР°РїР°Р·РѕРЅ [circMin, circMax]: РєСЂСѓРіРё ~1.2-1.3, СЂРѕРјР±С‹ ~1.6 (РІС‹С€Рµ), РєРІР°РґСЂР°С‚С‹ ~0.8 (РЅРёР¶Рµ)
 int countCircularRegions(const std::vector<RegionInfo>& regions,
-    int minArea, double circThreshold);
+    int minArea, double circMin, double circMax);
 
-// Сохранить карту меток как grayscale PNG
+// РЎРѕС…СЂР°РЅРёС‚СЊ РІСЃРµ СЂР°Р·РјРµС‡РµРЅРЅС‹Рµ РѕР±Р»Р°СЃС‚Рё (СЂР°Р·РЅС‹Рµ СЃРµСЂС‹Рµ СѓСЂРѕРІРЅРё)
 void saveLabeledImage(const int* labels, int width, int height,
     int numLabels, const char* filename);
+
+// РЎРѕС…СЂР°РЅРёС‚СЊ С‚РѕР»СЊРєРѕ РѕРєСЂСѓРіР»С‹Рµ РѕР±Р»Р°СЃС‚Рё (РѕСЃС‚Р°Р»СЊРЅРѕРµ вЂ” С‡С‘СЂРЅРѕРµ)
+void saveCircularOnly(const int* labels, const std::vector<RegionInfo>& regions,
+    int width, int height,
+    int minArea, double circMin, double circMax, const char* filename);
+
+// Р“РµРЅРµСЂР°С†РёСЏ С‚РµСЃС‚РѕРІРѕРіРѕ РёР·РѕР±СЂР°Р¶РµРЅРёСЏ СЃ РєСЂСѓРіР°РјРё, РєРІР°РґСЂР°С‚Р°РјРё Рё СЂРѕРјР±Р°РјРё
+void generateTestImage(uint8_t* img, int width, int height);
