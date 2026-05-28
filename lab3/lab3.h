@@ -2,20 +2,25 @@
 #include <cstddef>
 #include <cmath>
 
-// Три метода интерполяции
+// пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 enum InterpolationMethod {
     NEAREST_NEIGHBOR,
     BILINEAR,
     BICUBIC
 };
 
-// Поворот изображения на угол angleDeg (в градусах)
-// in  — входное изображение
-// out — выходное изображение (должно быть выделено заранее, размер outW*outH)
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ angleDeg (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
+// in  пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+// out пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ outW*outH)
 void rotateImage(const unsigned char* in, size_t inW, size_t inH,
     unsigned char* out, size_t outW, size_t outH,
     double angleDeg, InterpolationMethod method);
 
-// Вычислить размер выходного изображения после поворота
+// Р’С‹С‡РёСЃР»РµРЅРёРµ СЂР°Р·РјРµСЂРѕРІ РїРѕРІС‘СЂРЅСѓС‚РѕРіРѕ РёР·РѕР±СЂР°Р¶РµРЅРёСЏ
 void getRotatedSize(size_t inW, size_t inH, double angleDeg,
     size_t& outW, size_t& outH);
+
+// РЎС‚Р°СЂР°СЏ РІРµСЂСЃРёСЏ (switch РІРЅСѓС‚СЂРё С†РёРєР»Р°) вЂ” С‚РѕР»СЊРєРѕ РґР»СЏ Р±РµРЅС‡РјР°СЂРєР°
+void rotateImageOld(const unsigned char* in, size_t inW, size_t inH,
+    unsigned char* out, size_t outW, size_t outH,
+    double angleDeg, InterpolationMethod method);

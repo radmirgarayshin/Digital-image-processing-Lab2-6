@@ -29,26 +29,49 @@ int main(int argc, char* argv[])
     getRotatedSize(nWidth, nHeight, angle, outW, outH);
     unsigned char* pOut = new unsigned char[outW * outH];
 
+    // === Benchmark: switch INSIDE loop (old) vs switch OUTSIDE loop (new) ===
+    printf("=== Benchmark: switch inside loop vs outside loop (BILINEAR) ===\n");
+    clock_t tOld1 = clock();
+    rotateImageOld(pIn, nWidth, nHeight, pOut, outW, outH, angle, BILINEAR);
+    clock_t tOld2 = clock();
+    double timeOld = (double)(tOld2 - tOld1) / CLOCKS_PER_SEC;
+    printf("  Switch INSIDE loop  (old): %.4f sec\n", timeOld);
+
+    clock_t tNew1 = clock();
+    rotateImage(pIn, nWidth, nHeight, pOut, outW, outH, angle, BILINEAR);
+    clock_t tNew2 = clock();
+    double timeNew = (double)(tNew2 - tNew1) / CLOCKS_PER_SEC;
+    printf("  Switch OUTSIDE loop (new): %.4f sec\n", timeNew);
+    if (timeOld > 1e-6 && timeNew > 1e-6)
+        printf("  Speedup: %.2fx\n\n", timeOld / timeNew);
+    else if (timeOld > 1e-6)
+        printf("  (New version is too fast to measure)\n\n");
+    else
+        printf("\n");
+
+    // === Interpolation methods ===
+    printf("=== Interpolation results ===\n");
+
     // Ближайший сосед
     clock_t t1 = clock();
     rotateImage(pIn, nWidth, nHeight, pOut, outW, outH, angle, NEAREST_NEIGHBOR);
     clock_t t2 = clock();
     NPngProc::writePngFile("out_nearest.png", pOut, outW, outH, 8);
-    printf("Nearest neighbor: %.3f sec\n", (double)(t2 - t1) / CLOCKS_PER_SEC);
+    printf("Nearest neighbor: %.4f sec  -> out_nearest.png\n", (double)(t2 - t1) / CLOCKS_PER_SEC);
 
     // Билинейная
     t1 = clock();
     rotateImage(pIn, nWidth, nHeight, pOut, outW, outH, angle, BILINEAR);
     t2 = clock();
     NPngProc::writePngFile("out_bilinear.png", pOut, outW, outH, 8);
-    printf("Bilinear:         %.3f sec\n", (double)(t2 - t1) / CLOCKS_PER_SEC);
+    printf("Bilinear:         %.4f sec  -> out_bilinear.png\n", (double)(t2 - t1) / CLOCKS_PER_SEC);
 
     // Бикубическая
     t1 = clock();
     rotateImage(pIn, nWidth, nHeight, pOut, outW, outH, angle, BICUBIC);
     t2 = clock();
     NPngProc::writePngFile("out_bicubic.png", pOut, outW, outH, 8);
-    printf("Bicubic:          %.3f sec\n", (double)(t2 - t1) / CLOCKS_PER_SEC);
+    printf("Bicubic:          %.4f sec  -> out_bicubic.png\n", (double)(t2 - t1) / CLOCKS_PER_SEC);
 
     delete[] pIn;
     delete[] pOut;
