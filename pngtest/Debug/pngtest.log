@@ -1,6 +1,8 @@
 ﻿cl : командная строка  warning D9035: использование параметра "Gm" нежелательно, он будет удален в следующих выпусках
   pngtest.cpp
-C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\pngtest\pngtest.cpp(31,3): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
 C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\pngtest\pngtest.cpp(32,3): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\pngtest\pngtest.cpp(33,3): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\pngtest\pngtest.cpp(33,3): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\pngtest\pngtest.cpp(34,3): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\pngtest\pngtest.cpp(67,2): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\pngtest\pngtest.cpp(72,2): warning C4996: 'strncat': This function or variable may be unsafe. Consider using strncat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
   pngtest.vcxproj -> C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\Debug\pngtest.exe
