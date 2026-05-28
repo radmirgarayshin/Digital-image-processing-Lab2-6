@@ -2,36 +2,39 @@
 #include <cstddef>
 #include <vector>
 
-// Двумерная свёртка для произвольного ядра
-// kernel — ядро размером kW x kH (плоский массив)
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+// kernel пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ kW x kH (пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ)
 void convolve2d(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH,
     const double* kernel, int kW, int kH);
 
-// ФНЧ — усредняющий фильтр (box filter) размером size x size
+// пїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (box filter) пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ size x size
 void lowPassFilter(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH, int size);
 
-// Усредняющий фильтр с порогом
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 void thresholdAvgFilter(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH, int size, double threshold);
 
-// Добавление импульсного шума (salt & pepper)
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ (salt & pepper)
 void addImpulseNoise(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH, double density);
 
-// ФВЧ — Лапласиан
+// Р¤Р’Р§ Р›Р°РїР»Р°СЃРёР°РЅ вЂ” РєРѕРЅС„РёРіСѓСЂРёСЂСѓРµРјС‹Р№ СЂР°Р·РјРµСЂ СЏРґСЂР° (size x size, РЅРµС‡С‘С‚РЅРѕРµ)
+// РЇРґСЂРѕ: РІСЃРµ СЌР»РµРјРµРЅС‚С‹ = -1, С†РµРЅС‚СЂ = size*size - 1 (СЃСѓРјРјР° = 0)
+// Р РµР·СѓР»СЊС‚Р°С‚ СЃРјРµС‰С‘РЅ РЅР° +128 РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ
 void laplacianFilter(const unsigned char* in, unsigned char* out,
-    size_t imgW, size_t imgH);
+    size_t imgW, size_t imgH, int size = 3);
 
-// ФВЧ — LoG (Лапласиан Гауссиана)
+// Р¤Р’Р§ LoG (Р›Р°РїР»Р°СЃРёР°РЅ Р“Р°СѓСЃСЃР°)
 void logFilter(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH, double sigma);
 
-// Детектирование границ через нулевой переход LoG
+// Р”РµС‚РµРєС‚РёСЂРѕРІР°РЅРёРµ РіСЂР°РЅРёС† С‡РµСЂРµР· РЅСѓР»РµРІРѕР№ РїРµСЂРµС…РѕРґ LoG
 void zeroCrossing(const unsigned char* log_img, unsigned char* out,
     size_t imgW, size_t imgH);
 
-// Фильтр повышения резкости (unsharp masking)
+// РџРѕРІС‹С€РµРЅРёРµ СЂРµР·РєРѕСЃС‚Рё (unsharp masking) вЂ” РєРѕРЅС„РёРіСѓСЂРёСЂСѓРµРјС‹Р№ СЂР°Р·РјРµСЂ СЏРґСЂР°
+// РЇРґСЂРѕ: РІСЃРµ СЌР»РµРјРµРЅС‚С‹ = -amount, С†РµРЅС‚СЂ = 1 + (size*size - 1)*amount
 void sharpenFilter(const unsigned char* in, unsigned char* out,
-    size_t imgW, size_t imgH, double amount);
+    size_t imgW, size_t imgH, double amount, int size = 3);

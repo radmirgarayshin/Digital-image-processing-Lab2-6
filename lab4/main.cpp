@@ -56,15 +56,23 @@ int main(int argc, char* argv[])
     NPngProc::writePngFile("out_threshold_avg.png", pOut, nWidth, nHeight, 8);
     printf("Threshold avg filter: out_threshold_avg.png\n");
 
-    // --- Лапласиан ---
-    laplacianFilter(pIn, pOut, nWidth, nHeight);
-    NPngProc::writePngFile("out_laplacian.png", pOut, nWidth, nHeight, 8);
-    printf("Laplacian:            out_laplacian.png\n");
+    // --- Лапласиан (конфигурируемый размер ядра) ---
+    laplacianFilter(pIn, pOut, nWidth, nHeight, 3);
+    NPngProc::writePngFile("out_laplacian_3x3.png", pOut, nWidth, nHeight, 8);
+    printf("Laplacian 3x3:        out_laplacian_3x3.png\n");
+
+    laplacianFilter(pIn, pOut, nWidth, nHeight, 5);
+    NPngProc::writePngFile("out_laplacian_5x5.png", pOut, nWidth, nHeight, 8);
+    printf("Laplacian 5x5:        out_laplacian_5x5.png\n");
+
+    laplacianFilter(pIn, pOut, nWidth, nHeight, 7);
+    NPngProc::writePngFile("out_laplacian_7x7.png", pOut, nWidth, nHeight, 8);
+    printf("Laplacian 7x7:        out_laplacian_7x7.png\n");
 
     // --- LoG ---
     logFilter(pIn, pOut, nWidth, nHeight, 2.0);
     NPngProc::writePngFile("out_log.png", pOut, nWidth, nHeight, 8);
-    printf("LoG:                  out_log.png\n");
+    printf("LoG (sigma=2.0):      out_log.png\n");
 
     // --- Детектирование границ через нулевой переход ---
     logFilter(pIn, pTmp, nWidth, nHeight, 2.0);
@@ -72,10 +80,18 @@ int main(int argc, char* argv[])
     NPngProc::writePngFile("out_zero_crossing.png", pOut, nWidth, nHeight, 8);
     printf("Zero crossing:        out_zero_crossing.png\n");
 
-    // --- Повышение резкости ---
-    sharpenFilter(pIn, pOut, nWidth, nHeight, 0.8);
-    NPngProc::writePngFile("out_sharpen.png", pOut, nWidth, nHeight, 8);
-    printf("Sharpen:              out_sharpen.png\n");
+    // --- Повышение резкости (конфигурируемый размер ядра) ---
+    sharpenFilter(pIn, pOut, nWidth, nHeight, 0.8, 3);
+    NPngProc::writePngFile("out_sharpen_3x3.png", pOut, nWidth, nHeight, 8);
+    printf("Sharpen 3x3:          out_sharpen_3x3.png\n");
+
+    sharpenFilter(pIn, pOut, nWidth, nHeight, 0.5, 5);
+    NPngProc::writePngFile("out_sharpen_5x5.png", pOut, nWidth, nHeight, 8);
+    printf("Sharpen 5x5:          out_sharpen_5x5.png\n");
+
+    sharpenFilter(pIn, pOut, nWidth, nHeight, 0.3, 7);
+    NPngProc::writePngFile("out_sharpen_7x7.png", pOut, nWidth, nHeight, 8);
+    printf("Sharpen 7x7:          out_sharpen_7x7.png\n");
 
     delete[] pIn;
     delete[] pOut;

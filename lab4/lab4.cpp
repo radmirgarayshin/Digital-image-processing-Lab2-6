@@ -9,7 +9,7 @@ static double clamp(double v, double lo, double hi) {
 }
 
 // ================================================================
-//  ��������� ������
+//  Двумерная свёртка для произвольного ядра kW×kH
 // ================================================================
 
 void convolve2d(const unsigned char* in, unsigned char* out,
@@ -37,7 +37,7 @@ void convolve2d(const unsigned char* in, unsigned char* out,
 }
 
 // ================================================================
-//  ��� � ����������� ������
+//  ФНЧ с усредняющим ядром (box filter) размером size×size
 // ================================================================
 
 void lowPassFilter(const unsigned char* in, unsigned char* out,
@@ -49,7 +49,8 @@ void lowPassFilter(const unsigned char* in, unsigned char* out,
 }
 
 // ================================================================
-//  ����������� ������ � �������
+//  Усредняющий фильтр с порогом: усредняет только пиксели,
+//  яркость которых отличается от центра не более чем на threshold
 // ================================================================
 
 void thresholdAvgFilter(const unsigned char* in, unsigned char* out,
@@ -78,7 +79,7 @@ void thresholdAvgFilter(const unsigned char* in, unsigned char* out,
 }
 
 // ================================================================
-//  ���������� ��� (salt & pepper)
+//  Добавление импульсного шума (salt & pepper)
 // ================================================================
 
 void addImpulseNoise(const unsigned char* in, unsigned char* out,
@@ -95,27 +96,30 @@ void addImpulseNoise(const unsigned char* in, unsigned char* out,
 }
 
 // ================================================================
-//  ���������
+//  Лапласиан — конфигурируемый размер ядра
+//  Ядро size×size: все -1, центр = size*size - 1  (sum = 0)
+//  Результат смещается на +128 для визуализации
 // ================================================================
 
 void laplacianFilter(const unsigned char* in, unsigned char* out,
-    size_t imgW, size_t imgH)
+    size_t imgW, size_t imgH, int size)
 {
-    double kernel[] = {
-         0, -1,  0,
-        -1,  4, -1,
-         0, -1,  0
-    };
-    // ��������� �������� ��������� �� ������� 128
+    if (size < 1) size = 1;
+    if (size % 2 == 0) size++;   // нечётный размер
+
+    int n = size * size;
+    std::vector<double> kernel(n, -1.0);
+    kernel[n / 2] = (double)(n - 1);  // центр = N²-1, сумма = 0
+
+    int half = size / 2;
     for (int y = 0; y < (int)imgH; ++y) {
         for (int x = 0; x < (int)imgW; ++x) {
             double sum = 0.0;
-            int kH = 3, kW = 3;
-            for (int ky = 0; ky < kH; ++ky) {
-                for (int kx = 0; kx < kW; ++kx) {
-                    int ix = (int)clamp(x + kx - 1, 0, imgW - 1);
-                    int iy = (int)clamp(y + ky - 1, 0, imgH - 1);
-                    sum += in[iy * imgW + ix] * kernel[ky * kW + kx];
+            for (int ky = 0; ky < size; ++ky) {
+                for (int kx = 0; kx < size; ++kx) {
+                    int ix = (int)clamp(x + kx - half, 0, imgW - 1);
+                    int iy = (int)clamp(y + ky - half, 0, imgH - 1);
+                    sum += in[iy * imgW + ix] * kernel[ky * size + kx];
                 }
             }
             out[y * imgW + x] = (unsigned char)clamp(sum + 128, 0, 255);
@@ -124,13 +128,14 @@ void laplacianFilter(const unsigned char* in, unsigned char* out,
 }
 
 // ================================================================
-//  LoG (��������� ���������)
+//  LoG (Лапласиан Гаусса): сначала размытие гауссом, затем лапласиан
+//  Размер ядра выбирается автоматически: size = 6*sigma (нечётное)
 // ================================================================
 
 void logFilter(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH, double sigma)
 {
-    int size = (int)(6 * sigma) | 1; // �������� ������
+    int size = (int)(6 * sigma) | 1; // нечётный размер ~6σ
     if (size < 3) size = 3;
     int half = size / 2;
 
@@ -147,10 +152,10 @@ void logFilter(const unsigned char* in, unsigned char* out,
             sum += v;
         }
     }
-    // ����������
+    // Нормализация (убираем постоянную составляющую)
     for (auto& k : kernel) k -= sum / (size * size);
 
-    // ��������� �� ������� 128
+    // Применяем, результат смещён на +128 для отображения
     for (int y = 0; y < (int)imgH; ++y) {
         for (int x = 0; x < (int)imgW; ++x) {
             double s = 0.0;
@@ -167,7 +172,8 @@ void logFilter(const unsigned char* in, unsigned char* out,
 }
 
 // ================================================================
-//  �������������� ������ ����� ������� �������
+//  Детектирование границ через нулевой переход LoG
+//  Граница = смена знака между соседними пикселями LoG-образа
 // ================================================================
 
 void zeroCrossing(const unsigned char* log_img, unsigned char* out,
@@ -178,7 +184,7 @@ void zeroCrossing(const unsigned char* log_img, unsigned char* out,
     for (int y = 1; y < (int)imgH - 1; ++y) {
         for (int x = 1; x < (int)imgW - 1; ++x) {
             int c = (int)log_img[y * imgW + x] - 128;
-            // ��������� ������� �� ����������� � ���������
+            // Проверяем смену знака по горизонтали и вертикали
             int r = (int)log_img[y * imgW + x + 1] - 128;
             int d = (int)log_img[(y + 1) * imgW + x] - 128;
             if ((c > 0 && r < 0) || (c < 0 && r > 0) ||
@@ -189,17 +195,20 @@ void zeroCrossing(const unsigned char* log_img, unsigned char* out,
 }
 
 // ================================================================
-//  ��������� �������� (unsharp masking)
+//  Повышение резкости (unsharp masking) — конфигурируемый размер ядра
+//  Ядро size×size: все -amount, центр = 1 + (size*size-1)*amount
+//  Сумма ядра = 1 (яркость сохраняется)
 // ================================================================
 
 void sharpenFilter(const unsigned char* in, unsigned char* out,
-    size_t imgW, size_t imgH, double amount)
+    size_t imgW, size_t imgH, double amount, int size)
 {
-    // ����: �������� + amount * ���������
-    double kernel[] = {
-             0,      -amount,       0,
-        -amount, 1 + 4 * amount, -amount,
-             0,      -amount,       0
-    };
-    convolve2d(in, out, imgW, imgH, kernel, 3, 3);
+    if (size < 1) size = 1;
+    if (size % 2 == 0) size++;
+
+    int n = size * size;
+    std::vector<double> kernel(n, -amount);
+    kernel[n / 2] = 1.0 + (double)(n - 1) * amount;
+
+    convolve2d(in, out, imgW, imgH, kernel.data(), size, size);
 }
