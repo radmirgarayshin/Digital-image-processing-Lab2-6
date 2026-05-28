@@ -136,6 +136,79 @@ std::vector<Complex> makeSineSignal(const std::vector<double>& freqs, size_t n)
 }
 
 // ================================================================
+//  Сохранение 1D сигнала как осциллограмма
+// ================================================================
+
+void saveSignal(const std::vector<Complex>& signal, const char* filename)
+{
+    int N  = (int)signal.size();
+    int imgW = N;
+    int imgH = 128;
+
+    double minVal =  1e18, maxVal = -1e18;
+    for (int i = 0; i < N; ++i) {
+        double v = signal[i].real();
+        if (v < minVal) minVal = v;
+        if (v > maxVal) maxVal = v;
+    }
+    double range = (maxVal - minVal) > 1e-12 ? (maxVal - minVal) : 1.0;
+
+    std::vector<unsigned char> img(imgW * imgH, 0);
+
+    // горизонтальная линия нуля
+    int yZero = (int)((1.0 - (0.0 - minVal) / range) * (imgH - 1) + 0.5);
+    yZero = std::max(0, std::min(imgH - 1, yZero));
+    for (int x = 0; x < imgW; ++x)
+        img[yZero * imgW + x] = 60;
+
+    // сигнал
+    for (int x = 0; x < imgW; ++x) {
+        double v = signal[x].real();
+        int y = (int)((1.0 - (v - minVal) / range) * (imgH - 1) + 0.5);
+        y = std::max(0, std::min(imgH - 1, y));
+        img[y * imgW + x] = 255;
+    }
+
+    NPngProc::writePngFile(filename, img.data(), imgW, imgH, 8);
+}
+
+// ================================================================
+//  Сохранение 1D спектра как столбчатая диаграмма (fftshift)
+// ================================================================
+
+void saveSpectrum1D(const std::vector<Complex>& spectrum, const char* filename)
+{
+    int N   = (int)spectrum.size();
+    int imgW = N;
+    int imgH = 128;
+
+    // Амплитуды с fftshift (DC в центре)
+    std::vector<double> amp(N);
+    double maxAmp = 0.0;
+    for (int i = 0; i < N; ++i) {
+        int si = (i + N / 2) % N;          // fftshift
+        amp[i] = std::abs(spectrum[si]);
+        if (amp[i] > maxAmp) maxAmp = amp[i];
+    }
+    if (maxAmp < 1e-12) maxAmp = 1.0;
+
+    std::vector<unsigned char> img(imgW * imgH, 0);
+
+    // горизонтальная базовая линия
+    for (int x = 0; x < imgW; ++x)
+        img[(imgH - 1) * imgW + x] = 60;
+
+    // вертикальный столбец для каждого бина
+    for (int x = 0; x < imgW; ++x) {
+        int barH = (int)(amp[x] / maxAmp * (imgH - 2) + 0.5);
+        for (int y = imgH - 1 - barH; y < imgH; ++y)
+            img[y * imgW + x] = 255;
+    }
+
+    NPngProc::writePngFile(filename, img.data(), imgW, imgH, 8);
+}
+
+// ================================================================
 //  Генерация 2D изображения из смеси синусоид
 // ================================================================
 

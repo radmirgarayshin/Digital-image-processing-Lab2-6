@@ -4,22 +4,25 @@
 
 int main(int argc, char* argv[])
 {
-    // === Тест 1: 1D сигнал из смеси синусоид ===
+    // === Step 1: 1D FFT: mix of sinusoids ===
     printf("=== 1D FFT: mix of sinusoids ===\n");
     std::vector<double> freqs1d = { 5, 13, 30 };
     size_t sigLen = 256;
     auto signal = makeSineSignal(freqs1d, sigLen);
+
+    // Save original signal waveform
+    saveSignal(signal, "signal_1d.png");
+    printf("1D signal saved: signal_1d.png\n");
+
+    // FFT
     auto padded = padToPow2(signal);
     fft1d(padded);
 
-    size_t specLen = padded.size();
-    std::vector<std::vector<Complex>> spec1d(specLen, std::vector<Complex>(1));
-    for (size_t i = 0; i < specLen; ++i)
-        spec1d[i][0] = padded[i];
-    saveSpectrum(spec1d, 1, specLen, "spectrum_1d.png");
-    printf("1D spectrum saved: spectrum_1d.png\n");
+    // Save 1D spectrum as bar chart (fftshift, all 3 frequency peaks visible)
+    saveSpectrum1D(padded, "spectrum_1d.png");
+    printf("1D spectrum saved: spectrum_1d.png  (freqs: 5, 13, 30 -> 6 peaks symmetric around DC)\n");
 
-    // === Тест 2: 2D изображение из смеси синусоид ===
+    // === Step 2: 2D FFT: sine image ===
     printf("\n=== 2D FFT: sine image ===\n");
     size_t W = 256, H = 256;
     std::vector<unsigned char> sineImg(W * H);
@@ -34,7 +37,7 @@ int main(int argc, char* argv[])
     saveSpectrum(spectrum, outW, outH, "spectrum_2d_sine.png");
     printf("2D sine spectrum saved: spectrum_2d_sine.png\n");
 
-    // === Тест 3: FFT реального изображения ===
+    // === Step 3: FFT real image ===
     if (argc >= 2) {
         printf("\n=== 2D FFT: real image (%s) ===\n", argv[1]);
         size_t nWidth = 0, nHeight = 0;
