@@ -75,17 +75,27 @@ int main(int argc, char* argv[])
         for (size_t x = 0; x < benchW; ++x)
             benchIn[y * benchW + x] = pIn[y * nWidth + x];
 
-    printf("\n=== Median filter: sort vs Huang algorithm (crop %zux%zu) ===\n", benchW, benchH);
-    printf("  Size |  Sort (ms) |  Huang (ms) |  Speedup\n");
-    printf("  -----|------------|-------------|----------\n");
+    printf("\n=== Median filter: Fast3x3 / Sort(nth_elem) / Huang (crop %zux%zu) ===\n", benchW, benchH);
+    printf("  Size | Fast3x3(ms)| Sort (ms)  | Huang (ms) | Sort/Huang\n");
+    printf("  -----|------------|------------|------------|----------\n");
 
     const int numSizes = 10;
     const int aperSizes[] = { 3, 5, 7, 9, 11, 13, 15, 17, 19, 21 };
-    double timeSort[numSizes], timeHuang[numSizes];
+    double timeFast[numSizes], timeSort[numSizes], timeHuang[numSizes];
 
     for (int si = 0; si < numSizes; ++si) {
         int ks = aperSizes[si];
         clock_t t0, t1;
+
+        // Fast 3x3 (только для ks=3)
+        if (ks == 3) {
+            t0 = clock();
+            medianFilter3x3Fast(benchIn.data(), benchOut.data(), benchW, benchH);
+            t1 = clock();
+            timeFast[si] = 1000.0 * (double)(t1 - t0) / CLOCKS_PER_SEC;
+        } else {
+            timeFast[si] = -1.0;
+        }
 
         t0 = clock();
         medianFilterSort(benchIn.data(), benchOut.data(), benchW, benchH, ks, ks);
@@ -98,63 +108,92 @@ int main(int argc, char* argv[])
         timeHuang[si] = 1000.0 * (double)(t1 - t0) / CLOCKS_PER_SEC;
 
         double speedup = (timeHuang[si] > 0.001) ? timeSort[si] / timeHuang[si] : 0.0;
-        printf("  %2dx%-2d |   %8.1f |    %8.1f |  %.2fx\n",
-            ks, ks, timeSort[si], timeHuang[si], speedup);
+        if (timeFast[si] >= 0)
+            printf("  %2dx%-2d |   %8.1f |   %8.1f |   %8.1f |  %.2fx\n",
+                ks, ks, timeFast[si], timeSort[si], timeHuang[si], speedup);
+        else
+            printf("  %2dx%-2d |          - |   %8.1f |   %8.1f |  %.2fx\n",
+                ks, ks, timeSort[si], timeHuang[si], speedup);
     }
 
-    // === Timing chart PNG ===
-    // Two bars per aperture size: Sort (gray=160) and Huang (white=255)
-    int chartW  = 560;  // 10 groups * (26+30) px + margins
+    // === Timing line chart PNG ===
+    // Три ломаные линии: Sort (серый=160), Huang (белый=240), Fast3x3 (точка, светлый=200)
+    int chartW  = 560;
     int chartH  = 280;
     int marginL = 50, marginB = 40, marginT = 20, marginR = 20;
     int plotW   = chartW - marginL - marginR;
     int plotH   = chartH - marginT - marginB;
-    int groupW  = plotW / numSizes;   // pixels per group
-    int barW    = groupW / 2 - 2;    // bar width
 
     double maxTime = 0;
     for (int i = 0; i < numSizes; ++i)
         maxTime = std::max(maxTime, std::max(timeSort[i], timeHuang[i]));
     if (maxTime < 1.0) maxTime = 1.0;
 
-    std::vector<unsigned char> chart(chartW * chartH, 30);  // dark background
+    std::vector<unsigned char> chart(chartW * chartH, 30);  // тёмный фон
 
-    // Grid lines
+    // Горизонтальные линии сетки
     for (int gi = 1; gi <= 5; ++gi) {
         int gy = marginT + plotH - (int)(plotH * gi / 5.0);
         for (int x = marginL; x < marginL + plotW; ++x)
-            chart[gy * chartW + x] = 70;
+            chart[gy * chartW + x] = 60;
     }
 
-    // Bars
+    // Вспомогательная лямбда: пиксель точки на графике
+    auto plotPx = [&](int si, double t, unsigned char col, int radius) {
+        int px = marginL + si * plotW / (numSizes - 1);
+        int py = marginT + plotH - (int)(plotH * t / maxTime + 0.5);
+        for (int dy = -radius; dy <= radius; ++dy)
+            for (int dx = -radius; dx <= radius; ++dx) {
+                int nx = px + dx, ny = py + dy;
+                if (nx >= 0 && nx < chartW && ny >= 0 && ny < chartH)
+                    chart[ny * chartW + nx] = col;
+            }
+    };
+
+    // Вспомогательная лямбда: линия между двумя точками (алгоритм Брезенхема)
+    auto drawLine = [&](int x0, int y0, int x1, int y1, unsigned char col) {
+        int dx = std::abs(x1 - x0), dy = std::abs(y1 - y0);
+        int sx = (x0 < x1) ? 1 : -1, sy = (y0 < y1) ? 1 : -1;
+        int err = dx - dy;
+        while (true) {
+            if (x0 >= 0 && x0 < chartW && y0 >= 0 && y0 < chartH)
+                chart[y0 * chartW + x0] = col;
+            if (x0 == x1 && y0 == y1) break;
+            int e2 = 2 * err;
+            if (e2 > -dy) { err -= dy; x0 += sx; }
+            if (e2 <  dx) { err += dx; y0 += sy; }
+        }
+    };
+
+    // Ломаные линии для Sort и Huang
+    for (int si = 0; si < numSizes - 1; ++si) {
+        int x0 = marginL + si * plotW / (numSizes - 1);
+        int x1 = marginL + (si + 1) * plotW / (numSizes - 1);
+        int ySort0 = marginT + plotH - (int)(plotH * timeSort[si]     / maxTime + 0.5);
+        int ySort1 = marginT + plotH - (int)(plotH * timeSort[si + 1] / maxTime + 0.5);
+        int yHu0   = marginT + plotH - (int)(plotH * timeHuang[si]     / maxTime + 0.5);
+        int yHu1   = marginT + plotH - (int)(plotH * timeHuang[si + 1] / maxTime + 0.5);
+        drawLine(x0, ySort0, x1, ySort1, 160);  // Sort — серый
+        drawLine(x0, yHu0,   x1, yHu1,   240);  // Huang — белый
+    }
+
+    // Точки на линиях + маркер Fast3x3 для ks=3
     for (int si = 0; si < numSizes; ++si) {
-        int gx = marginL + si * groupW;
-
-        // Sort bar (gray = 160)
-        int hSort = (int)(plotH * timeSort[si] / maxTime + 0.5);
-        for (int y = marginT + plotH - hSort; y < marginT + plotH; ++y)
-            for (int x = gx + 1; x < gx + 1 + barW; ++x)
-                if (x >= 0 && x < chartW && y >= 0 && y < chartH)
-                    chart[y * chartW + x] = 160;
-
-        // Huang bar (white = 240)
-        int hHuang = (int)(plotH * timeHuang[si] / maxTime + 0.5);
-        for (int y = marginT + plotH - hHuang; y < marginT + plotH; ++y)
-            for (int x = gx + barW + 3; x < gx + 2 * barW + 3; ++x)
-                if (x >= 0 && x < chartW && y >= 0 && y < chartH)
-                    chart[y * chartW + x] = 240;
+        plotPx(si, timeSort[si],  160, 2);
+        plotPx(si, timeHuang[si], 240, 2);
+        if (timeFast[si] >= 0)
+            plotPx(si, timeFast[si], 200, 3);  // Fast3x3 — звёздочка
     }
 
-    // Baseline
+    // Оси
     for (int x = marginL; x < marginL + plotW; ++x)
         chart[(marginT + plotH) * chartW + x] = 200;
-    // Left axis
     for (int y = marginT; y <= marginT + plotH; ++y)
         chart[y * chartW + marginL] = 200;
 
     NPngProc::writePngFile("timing_chart.png", chart.data(), chartW, chartH, 8);
     printf("\nTiming chart saved: timing_chart.png\n");
-    printf("Legend: gray bar = sort-based,  white bar = Huang algorithm\n\n");
+    printf("Legend: gray line = Sort(nth_elem), white line = Huang, circle at 3x3 = Fast3x3\n\n");
 
     // --- Морфологические операции ---
     printf("\n=== Morphological operations ===\n");

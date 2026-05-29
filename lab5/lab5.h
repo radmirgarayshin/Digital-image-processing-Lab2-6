@@ -7,17 +7,21 @@
 void rankFilter(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH, int apertureW, int apertureH, int rank);
 
-// Медианный фильтр — сортировкой (оптимален для малых апертур, ≤5×5)
+// Медианный фильтр — сортировкой через nth_element (O(n) выбор)
 void medianFilterSort(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH, int apertureW, int apertureH);
 
+// Быстрый медианный фильтр 3×3 — сеть сравнений (19 операций, opt_med9)
+void medianFilter3x3Fast(const unsigned char* in, unsigned char* out,
+    size_t imgW, size_t imgH);
+
 // Медианный фильтр — алгоритм Хуанга: скользящая гистограмма
-// O(256) на пиксель (не зависит от размера апертуры), оптимален для больших
+// O(kH + 256) на пиксель (не растёт с площадью апертуры), оптимален для больших
 void medianFilterHuang(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH, int apertureW, int apertureH);
 
 // Медианный фильтр — автоматически выбирает реализацию:
-//   ≤5×5: сортировка,  >5×5: алгоритм Хуанга
+//   3×3: сеть сравнений; 5×5-7×7: nth_element; 9×9+: алгоритм Хуанга
 void medianFilter(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH, int apertureW, int apertureH);
 

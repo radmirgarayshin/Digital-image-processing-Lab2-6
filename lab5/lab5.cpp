@@ -30,12 +30,73 @@ void rankFilter(const unsigned char* in, unsigned char* out,
     }
 }
 
-// Медианный фильтр сортировкой (через rankFilter)
+// ================================================================
+//  Медианный фильтр — сортировкой через nth_element (O(n) выбор)
+//  nth_element быстрее std::sort (O(n log n)) — только ищет k-й элемент
+// ================================================================
+
 void medianFilterSort(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH, int apertureW, int apertureH)
 {
-    rankFilter(in, out, imgW, imgH, apertureW, apertureH,
-        (apertureW * apertureH) / 2);
+    int halfW = apertureW / 2;
+    int halfH = apertureH / 2;
+    int total = apertureW * apertureH;
+    int medIdx = total / 2;
+    std::vector<unsigned char> window(total);
+
+    for (int y = 0; y < (int)imgH; ++y) {
+        for (int x = 0; x < (int)imgW; ++x) {
+            int idx = 0;
+            for (int ky = -halfH; ky <= halfH; ++ky)
+                for (int kx = -halfW; kx <= halfW; ++kx) {
+                    int ix = std::max(0, std::min((int)imgW - 1, x + kx));
+                    int iy = std::max(0, std::min((int)imgH - 1, y + ky));
+                    window[idx++] = in[iy * imgW + ix];
+                }
+            // nth_element: O(n) в среднем — быстрее O(n log n) full sort
+            std::nth_element(window.begin(), window.begin() + medIdx, window.end());
+            out[y * imgW + x] = window[medIdx];
+        }
+    }
+}
+
+// ================================================================
+//  Быстрый медианный фильтр 3×3 — сеть сравнений (19 операций)
+//  Классический opt_med9 (N. Devillard). Без ветвлений на значениях,
+//  только условные перестановки — быстрее nth_element для 9 элементов.
+// ================================================================
+
+static inline void cs9(unsigned char& a, unsigned char& b) {
+    if (a > b) { unsigned char t = a; a = b; b = t; }
+}
+
+static inline unsigned char median9network(unsigned char v[9]) {
+    cs9(v[1],v[2]); cs9(v[4],v[5]); cs9(v[7],v[8]);
+    cs9(v[0],v[1]); cs9(v[3],v[4]); cs9(v[6],v[7]);
+    cs9(v[1],v[2]); cs9(v[4],v[5]); cs9(v[7],v[8]);
+    cs9(v[0],v[3]); cs9(v[5],v[8]); cs9(v[4],v[7]);
+    cs9(v[3],v[6]); cs9(v[1],v[4]); cs9(v[2],v[5]);
+    cs9(v[4],v[7]); cs9(v[4],v[2]); cs9(v[6],v[4]);
+    cs9(v[4],v[2]);
+    return v[4];  // гарантированно медиана
+}
+
+void medianFilter3x3Fast(const unsigned char* in, unsigned char* out,
+    size_t imgW, size_t imgH)
+{
+    unsigned char win[9];
+    for (int y = 0; y < (int)imgH; ++y) {
+        for (int x = 0; x < (int)imgW; ++x) {
+            int idx = 0;
+            for (int ky = -1; ky <= 1; ++ky)
+                for (int kx = -1; kx <= 1; ++kx) {
+                    int ix = std::max(0, std::min((int)imgW - 1, x + kx));
+                    int iy = std::max(0, std::min((int)imgH - 1, y + ky));
+                    win[idx++] = in[iy * imgW + ix];
+                }
+            out[y * imgW + x] = median9network(win);
+        }
+    }
 }
 
 // ================================================================
@@ -95,11 +156,16 @@ void medianFilterHuang(const unsigned char* in, unsigned char* out,
     }
 }
 
-// Автовыбор: для малых ядер (≤5×5) — сортировка, для больших — Хуанг
+// Автовыбор реализации по размеру апертуры:
+//   3×3        → сеть сравнений (medianFilter3x3Fast, 19 операций)
+//   5×5..7×7   → nth_element / сортировка (medianFilterSort)
+//   9×9 и выше → алгоритм Хуанга (скользящая гистограмма)
 void medianFilter(const unsigned char* in, unsigned char* out,
     size_t imgW, size_t imgH, int apertureW, int apertureH)
 {
-    if (apertureW * apertureH <= 25)   // ≤ 5×5
+    if (apertureW == 3 && apertureH == 3)
+        medianFilter3x3Fast(in, out, imgW, imgH);
+    else if (apertureW * apertureH <= 49)   // ≤ 7×7
         medianFilterSort(in, out, imgW, imgH, apertureW, apertureH);
     else
         medianFilterHuang(in, out, imgW, imgH, apertureW, apertureH);
