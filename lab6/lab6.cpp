@@ -198,17 +198,18 @@ std::vector<RegionInfo> computeRegionProperties(
 }
 
 // ================================================================
-//  Подсчёт округлых областей (по circIso)
+//  Подсчёт округлых областей (по circEig = λ_min / λ_max)
+//  circEig ≈ 1.0 → форма изотропна (круг)
+//  circEig << 1.0 → форма вытянутая (эллипс, прямоугольник)
+//  Порог eigMin (например 0.85) отделяет круги от вытянутых фигур.
 // ================================================================
 
 int countCircularRegions(const std::vector<RegionInfo>& regions,
-    int minArea, double circMin, double circMax)
+    int minArea, double eigMin, double /*eigMax*/)
 {
     int count = 0;
     for (size_t i = 1; i < regions.size(); i++) {
-        if (regions[i].area > minArea
-            && regions[i].circIso >= circMin
-            && regions[i].circIso <= circMax)
+        if (regions[i].area > minArea && regions[i].circEig >= eigMin)
             count++;
     }
     return count;
@@ -231,34 +232,38 @@ void saveLabeledImage(const int* labels, int width, int height,
 
 // ================================================================
 //  Сохранение только округлых областей (остальное зачернить)
-//  Использует circIso >= circThreshold
+//  Использует circEig >= eigMin (eigMax игнорируется — для совместимости)
 // ================================================================
 
 void saveCircularOnly(const int* labels, const std::vector<RegionInfo>& regions,
     int width, int height,
-    int minArea, double circMin, double circMax, const char* filename)
+    int minArea, double eigMin, double /*eigMax*/, const char* filename)
 {
     std::vector<uint8_t> out(width * height, 0);
     for (int i = 0; i < width * height; i++) {
         int lbl = labels[i];
         if (lbl <= 0) continue;
         const RegionInfo& r = regions[lbl];
-        if (r.area > minArea && r.circIso >= circMin && r.circIso <= circMax)
+        if (r.area > minArea && r.circEig >= eigMin)
             out[i] = 255;
     }
     NPngProc::writePngFile(filename, out.data(), (size_t)width, (size_t)height, 8);
 }
 
 // ================================================================
-//  Генерация тестового изображения: круги, квадраты, ромбы
+//  Генерация тестового изображения: круги, вытянутые эллипсы, прямоугольники
 //  Фон — чёрный (0), фигуры — белые (255)
+//
+//  circEig = λ_min / λ_max:
+//    Круг      : circEig ≈ 1.00
+//    Эллипс 3:1: circEig ≈ 0.11  (b²/a² = (15/45)²)
+//    Прямоуг 3:1: circEig ≈ 0.11  (min/max момент)
 // ================================================================
 
 void generateTestImage(uint8_t* img, int width, int height)
 {
     memset(img, 0, width * height);
 
-    // Вспомогательные лямбды
     auto setPixel = [&](int x, int y) {
         if (x >= 0 && x < width && y >= 0 && y < height)
             img[y * width + x] = 255;
@@ -266,9 +271,9 @@ void generateTestImage(uint8_t* img, int width, int height)
 
     // --- 3 круга ---
     struct { int cx, cy, r; } circles[] = {
-        { 50,  50, 30 },
-        { 150, 60, 22 },
-        { 80,  160, 38 }
+        { 55,  55, 35 },
+        { 175, 60, 25 },
+        { 90,  180, 40 }
     };
     for (auto& c : circles) {
         for (int y = c.cy - c.r - 1; y <= c.cy + c.r + 1; ++y)
@@ -277,26 +282,31 @@ void generateTestImage(uint8_t* img, int width, int height)
                     setPixel(x, y);
     }
 
-    // --- 2 квадрата (оси выровнены) ---
-    struct { int x0, y0, side; } squares[] = {
-        { 180, 30,  50 },
-        { 190, 140, 35 }
+    // --- 2 вытянутых эллипса (a:b ≈ 3:1, горизонтальная ось) ---
+    // circEig = (b/a)² ≈ 0.11 → явно не круг
+    struct { int cx, cy, a, b; } ellipses[] = {
+        { 195, 170, 45, 15 },
+        { 65,  265, 40, 13 }
     };
-    for (auto& s : squares) {
-        for (int y = s.y0; y < s.y0 + s.side; ++y)
-            for (int x = s.x0; x < s.x0 + s.side; ++x)
-                setPixel(x, y);
+    for (auto& e : ellipses) {
+        for (int y = e.cy - e.b - 1; y <= e.cy + e.b + 1; ++y)
+            for (int x = e.cx - e.a - 1; x <= e.cx + e.a + 1; ++x) {
+                double fx = (double)(x - e.cx) / e.a;
+                double fy = (double)(y - e.cy) / e.b;
+                if (fx * fx + fy * fy <= 1.0)
+                    setPixel(x, y);
+            }
     }
 
-    // --- 2 ромба (квадраты, повёрнутые на 45°) ---
-    struct { int cx, cy, d; } diamonds[] = {
-        { 50,  230, 28 },  // d = полуось
-        { 155, 230, 20 }
+    // --- 2 прямоугольника (отношение сторон ≈ 3:1) ---
+    // circEig ≈ (короткая/длинная)² ≈ 0.11
+    struct { int x0, y0, w, h; } rects[] = {
+        { 155, 230, 80, 26 },
+        { 155, 285, 70, 22 }
     };
-    for (auto& d : diamonds) {
-        for (int y = d.cy - d.d; y <= d.cy + d.d; ++y)
-            for (int x = d.cx - d.d; x <= d.cx + d.d; ++x)
-                if (abs(x - d.cx) + abs(y - d.cy) <= d.d)
-                    setPixel(x, y);
+    for (auto& r : rects) {
+        for (int y = r.y0; y < r.y0 + r.h; ++y)
+            for (int x = r.x0; x < r.x0 + r.w; ++x)
+                setPixel(x, y);
     }
 }
