@@ -24,7 +24,8 @@ void rankFilter(const unsigned char* in, unsigned char* out,
                     int iy = std::max(0, std::min((int)imgH - 1, y + ky));
                     window[idx++] = in[iy * imgW + ix];
                 }
-            std::sort(window.begin(), window.end());
+            // nth_element: O(n) выбор k-го элемента — быстрее O(n log n) full sort
+            std::nth_element(window.begin(), window.begin() + rank, window.end());
             out[y * imgW + x] = window[rank];
         }
     }
@@ -193,13 +194,21 @@ void trimmedMeanFilter(const unsigned char* in, unsigned char* out,
                     int iy = std::max(0, std::min((int)imgH - 1, y + ky));
                     window[idx++] = in[iy * imgW + ix];
                 }
-            std::sort(window.begin(), window.end());
+            // Два вызова nth_element вместо полной сортировки:
+            // 1-й: гарантирует, что window[0..trimCount-1] — trimCount наименьших
+            std::nth_element(window.begin(),
+                             window.begin() + trimCount,
+                             window.end());
+            // 2-й: среди оставшихся [trimCount..total-1] перемещает trimCount
+            //      наибольших в конец [total-trimCount..total-1]
+            std::nth_element(window.begin() + trimCount,
+                             window.begin() + (total - trimCount),
+                             window.end());
+            // Суммируем только средние элементы [trimCount .. total-trimCount-1]
             double sum = 0;
-            int count = 0;
-            for (int i = trimCount; i < total - trimCount; ++i) {
+            int count = total - 2 * trimCount;
+            for (int i = trimCount; i < total - trimCount; ++i)
                 sum += window[i];
-                ++count;
-            }
             out[y * imgW + x] = (unsigned char)(count > 0 ? sum / count : 0);
         }
     }
