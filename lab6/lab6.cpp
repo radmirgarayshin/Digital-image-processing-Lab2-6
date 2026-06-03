@@ -180,7 +180,7 @@ std::vector<RegionInfo> computeRegionProperties(
         regions[i].mu02 /= a;
         regions[i].mu11 /= a;
 
-        // circEig = lam_min / lam_max
+        // circEig = lam_min / lam_max (отношение собственных значений матрицы моментов)
         double trace = regions[i].mu20 + regions[i].mu02;
         double det   = regions[i].mu20 * regions[i].mu02
                      - regions[i].mu11 * regions[i].mu11;
@@ -189,27 +189,31 @@ std::vector<RegionInfo> computeRegionProperties(
         double lam2  = trace / 2.0 - disc;
         regions[i].circEig = (lam1 < 1e-10) ? 1.0 : lam2 / lam1;
 
-        // circIso = 4*pi*Area / Perimeter^2
+        // circIso = 4*pi*S/P² — изопериметрический коэффициент (для справки)
         int P = regions[i].perimeter;
         regions[i].circIso = (P > 0) ? (4.0 * M_PI * a / ((double)P * P)) : 0.0;
+
+        // circMom = A / (2*pi*(mu20+mu02)) — признак округлости через моменты.
+        // Для круга = 1.0, для квадрата ≈ 0.955, для прямоуг./эллипса 3:1 ≈ 0.57-0.60.
+        // trace уже посчитан выше — переиспользуем его.
+        regions[i].circMom = (trace > 1e-10) ? (a / (2.0 * M_PI * trace)) : 0.0;
     }
 
     return regions;
 }
 
 // ================================================================
-//  Подсчёт округлых областей (по circEig = λ_min / λ_max)
-//  circEig ≈ 1.0 → форма изотропна (круг)
-//  circEig << 1.0 → форма вытянутая (эллипс, прямоугольник)
-//  Порог eigMin (например 0.85) отделяет круги от вытянутых фигур.
+//  Подсчёт округлых областей по признаку circMom = A/(2*pi*(mu20+mu02))
+//  Круг: circMom = 1.0; квадрат: ~0.955; эллипс/прямоуг. 3:1: ~0.57-0.60
+//  Порог momMin = 0.90 надёжно выделяет только круги.
 // ================================================================
 
 int countCircularRegions(const std::vector<RegionInfo>& regions,
-    int minArea, double eigMin, double /*eigMax*/)
+    int minArea, double momMin, double /*momMax*/)
 {
     int count = 0;
     for (size_t i = 1; i < regions.size(); i++) {
-        if (regions[i].area > minArea && regions[i].circEig >= eigMin)
+        if (regions[i].area > minArea && regions[i].circMom >= momMin)
             count++;
     }
     return count;
@@ -237,14 +241,14 @@ void saveLabeledImage(const int* labels, int width, int height,
 
 void saveCircularOnly(const int* labels, const std::vector<RegionInfo>& regions,
     int width, int height,
-    int minArea, double eigMin, double /*eigMax*/, const char* filename)
+    int minArea, double momMin, double /*momMax*/, const char* filename)
 {
     std::vector<uint8_t> out(width * height, 0);
     for (int i = 0; i < width * height; i++) {
         int lbl = labels[i];
         if (lbl <= 0) continue;
         const RegionInfo& r = regions[lbl];
-        if (r.area > minArea && r.circEig >= eigMin)
+        if (r.area > minArea && r.circMom >= momMin)
             out[i] = 255;
     }
     NPngProc::writePngFile(filename, out.data(), (size_t)width, (size_t)height, 8);

@@ -1,0 +1,6 @@
+﻿  PngProc.cpp
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\pngtest\PngProc.cpp(5,10): error C1083: Не удается открыть файл включение: png.h: No such file or directory,
+  lab6.cpp
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\lab6\lab6.cpp(2,10): error C1083: Не удается открыть файл включение: PngProc.h: No such file or directory,
+  main.cpp
+C:\Users\Радмир\komp_izobr\komp_izobr\png_lib_vs2022\lab6\main.cpp(5,10): error C1083: Не удается открыть файл включение: PngProc.h: No such file or directory,

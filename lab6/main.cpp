@@ -4,14 +4,12 @@
 #include "lab6.h"
 #include "PngProc.h"
 
-// Вспомогательная функция: запустить полный пайплайн на изображении
-// eigMin: нижний порог circEig = λ_min/λ_max для отбора округлых областей
-//   Круг:      circEig ≈ 1.0  (изотропная форма)
-//   Эллипс 3:1: circEig ≈ 0.11 (вытянутая)
-//   Прямоугольник 3:1: circEig ≈ 0.11 (вытянутая)
-// Порог eigMin = 0.80 надёжно выделяет только круги
+// Запускает полный пайплайн: бинаризация → компоненты → признаки → отбор кругов.
+// momMin: порог признака circMom = A/(2*pi*(mu20+mu02))
+//   Круг: circMom ≈ 1.0; квадрат: ~0.955; эллипс/прямоуг. 3:1: ~0.57-0.60
+//   При momMin=0.90 отбираются только круги.
 static void runPipeline(const uint8_t* img, int width, int height,
-    const char* tag, int minArea, double eigMin, double eigMax)
+    const char* tag, int minArea, double momMin, double momMax)
 {
     printf("=== Pipeline: %s (%dx%d) ===\n", tag, width, height);
 
@@ -41,30 +39,30 @@ static void runPipeline(const uint8_t* img, int width, int height,
     auto regions = computeRegionProperties(labels.data(), width, height, numLabels);
 
     // 5. Таблица признаков
-    printf("\n  %-5s %-7s %-7s %-7s %-10s %-8s %-10s %-12s\n",
-        "Label", "Area", "cx", "cy", "circEig", "Perim", "circIso", "Shape?");
+    printf("\n  %-5s %-7s %-7s %-7s %-10s %-10s %-10s %-10s\n",
+        "Label", "Area", "cx", "cy", "circMom", "circEig", "circIso", "Shape?");
     for (int i = 1; i <= numLabels; i++) {
         if (regions[i].area <= minArea) continue;
-        // Основной признак: circEig = lambda_min / lambda_max
-        // Круг → circEig ≈ 1.0; вытянутая форма → circEig << 1.0
-        const char* shape = (regions[i].circEig >= eigMin) ? "CIRCLE" : "elongated";
-        printf("  %-5d %-7d %-7.1f %-7.1f %-10.3f %-8d %-10.3f %-12s\n",
+        // Основной признак: circMom = A / (2*pi*(mu20+mu02))
+        // Круг → 1.0; квадрат → 0.955; эллипс/прямоугольник 3:1 → ~0.57-0.60
+        const char* shape = (regions[i].circMom >= momMin) ? "CIRCLE" : "other";
+        printf("  %-5d %-7d %-7.1f %-7.1f %-10.3f %-10.3f %-10.3f %-10s\n",
             i, regions[i].area,
             regions[i].cx, regions[i].cy,
+            regions[i].circMom,
             regions[i].circEig,
-            regions[i].perimeter,
             regions[i].circIso,
             shape);
     }
 
     // 6. Подсчёт и сохранение только округлых областей
-    int circles = countCircularRegions(regions, minArea, eigMin, eigMax);
-    printf("\n  Circular regions (area > %d, circEig >= %.2f): %d\n",
-        minArea, eigMin, circles);
+    int circles = countCircularRegions(regions, minArea, momMin, momMax);
+    printf("\n  Circular regions (area > %d, circMom >= %.2f): %d\n",
+        minArea, momMin, circles);
 
     snprintf(fname, sizeof(fname), "out_%s_circles_only.png", tag);
     saveCircularOnly(labels.data(), regions, width, height,
-        minArea, eigMin, eigMax, fname);
+        minArea, momMin, momMax, fname);
     printf("  Saved (circles only): %s\n\n", fname);
 }
 
@@ -72,8 +70,8 @@ int main(int argc, char* argv[])
 {
     // ===== A: Тестовое изображение из файла =====
     // test_shapes.png: чёрный фон, белые фигуры — 3 круга, 2 эллипса (3:1), 2 прямоугольника (3:1)
-    // Критерий отбора: circEig = lambda_min/lambda_max >= 0.80
-    //   Круг: circEig ≈ 1.0;  Эллипс 3:1: circEig ≈ 0.11;  Прямоуг 3:1: circEig ≈ 0.11
+    // Критерий отбора: circMom = A/(2*pi*(mu20+mu02)) >= 0.90
+    //   Круг: circMom ≈ 1.0;  Квадрат: ≈ 0.955;  Эллипс/прямоуг. 3:1: ~0.57-0.60
     {
         const char* testFile = "test_shapes.png";
         size_t tW = 0, tH = 0;
@@ -84,7 +82,7 @@ int main(int argc, char* argv[])
             std::vector<uint8_t> testImg(tSize);
             NPngProc::readPngFileGray(testFile, testImg.data(), &tW, &tH);
             printf("Test image: %s (%zux%zu)\n\n", testFile, tW, tH);
-            runPipeline(testImg.data(), (int)tW, (int)tH, "test", 30, 0.80, 1.01);
+            runPipeline(testImg.data(), (int)tW, (int)tH, "test", 30, 0.90, 1.01);
         }
     }
 
@@ -97,7 +95,7 @@ int main(int argc, char* argv[])
         } else {
             std::vector<uint8_t> img(nSize);
             NPngProc::readPngFileGray(argv[1], img.data(), &nWidth, &nHeight);
-            runPipeline(img.data(), (int)nWidth, (int)nHeight, "real", 30, 0.80, 1.01);
+            runPipeline(img.data(), (int)nWidth, (int)nHeight, "real", 30, 0.90, 1.01);
         }
     } else {
         printf("(No real image provided; run with: lab6 <image.png>)\n");
